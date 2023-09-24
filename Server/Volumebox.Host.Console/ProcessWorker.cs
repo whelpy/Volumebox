@@ -12,7 +12,7 @@ namespace Volumebox.Host.Console
     {
         public float? GetApplicationVolume(uint pid)
         {
-            ISimpleAudioVolume volume = GetVolumeObject(pid);
+            ISimpleAudioVolume? volume = GetVolumeObject(pid);
             if (volume == null)
                 return null;
 
@@ -23,7 +23,7 @@ namespace Volumebox.Host.Console
 
         public bool? GetApplicationMute(uint pid)
         {
-            ISimpleAudioVolume volume = GetVolumeObject(pid);
+            ISimpleAudioVolume? volume = GetVolumeObject(pid);
             if (volume == null)
                 return null;
 
@@ -34,7 +34,7 @@ namespace Volumebox.Host.Console
 
         public void SetApplicationVolume(uint pid, float level)
         {
-            ISimpleAudioVolume volume = GetVolumeObject(pid);
+            ISimpleAudioVolume? volume = GetVolumeObject(pid);
             if (volume == null)
                 return;
 
@@ -44,7 +44,7 @@ namespace Volumebox.Host.Console
 
         public void SetApplicationMute(uint pid, bool mute)
         {
-            ISimpleAudioVolume volume = GetVolumeObject(pid);
+            ISimpleAudioVolume? volume = GetVolumeObject(pid);
             if (volume == null)
                 return;
 
@@ -86,7 +86,7 @@ namespace Volumebox.Host.Console
             Marshal.ReleaseComObject(deviceEnumerator);
         }
 
-        private ISimpleAudioVolume GetVolumeObject(uint pid)
+        private ISimpleAudioVolume? GetVolumeObject(uint pid)
         {
             // get the speakers (1st render + multimedia) device
             IMMDeviceEnumerator deviceEnumerator = (IMMDeviceEnumerator)(new MMDeviceEnumerator());
@@ -107,7 +107,7 @@ namespace Volumebox.Host.Console
 
             // search for an audio session with the required name
             // NOTE: we could also use the process id instead of the app name (with IAudioSessionControl2)
-            ISimpleAudioVolume volumeControl = null;
+            ISimpleAudioVolume? volumeControl = null;
             for (int i = 0; i < count; i++)
             {
                 IAudioSessionControl2 ctl;
