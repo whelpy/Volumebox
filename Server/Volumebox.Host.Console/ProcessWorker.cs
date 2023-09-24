@@ -10,9 +10,9 @@ namespace Volumebox.Host.Console
 {
     internal class ProcessWorker
     {
-        public float? GetApplicationVolume(string name)
+        public float? GetApplicationVolume(uint pid)
         {
-            ISimpleAudioVolume volume = GetVolumeObject(name);
+            ISimpleAudioVolume volume = GetVolumeObject(pid);
             if (volume == null)
                 return null;
 
@@ -21,9 +21,9 @@ namespace Volumebox.Host.Console
             return level * 100;
         }
 
-        public bool? GetApplicationMute(string name)
+        public bool? GetApplicationMute(uint pid)
         {
-            ISimpleAudioVolume volume = GetVolumeObject(name);
+            ISimpleAudioVolume volume = GetVolumeObject(pid);
             if (volume == null)
                 return null;
 
@@ -32,9 +32,9 @@ namespace Volumebox.Host.Console
             return mute;
         }
 
-        public void SetApplicationVolume(string name, float level)
+        public void SetApplicationVolume(uint pid, float level)
         {
-            ISimpleAudioVolume volume = GetVolumeObject(name);
+            ISimpleAudioVolume volume = GetVolumeObject(pid);
             if (volume == null)
                 return;
 
@@ -42,9 +42,9 @@ namespace Volumebox.Host.Console
             volume.SetMasterVolume(level / 100, ref guid);
         }
 
-        public void SetApplicationMute(string name, bool mute)
+        public void SetApplicationMute(uint pid, bool mute)
         {
-            ISimpleAudioVolume volume = GetVolumeObject(name);
+            ISimpleAudioVolume volume = GetVolumeObject(pid);
             if (volume == null)
                 return;
 
@@ -52,7 +52,7 @@ namespace Volumebox.Host.Console
             volume.SetMute(mute, ref guid);
         }
 
-        public IEnumerable<string> EnumerateApplications()
+        public IEnumerable<uint> EnumerateApplications()
         {
             // get the speakers (1st render + multimedia) device
             IMMDeviceEnumerator deviceEnumerator = (IMMDeviceEnumerator)(new MMDeviceEnumerator());
@@ -73,12 +73,12 @@ namespace Volumebox.Host.Console
 
             for (int i = 0; i < count; i++)
             {
-                IAudioSessionControl ctl;
+                IAudioSessionControl2 ctl;
                 sessionEnumerator.GetSession(i, out ctl);
-                string dn;
-                ctl.GetDisplayName(out dn);
+                uint dn;
+                ctl.GetProcessId(out dn);
                 yield return dn;
-                Marshal.ReleaseComObject(ctl);
+                //Marshal.ReleaseComObject(ctl);
             }
             Marshal.ReleaseComObject(sessionEnumerator);
             Marshal.ReleaseComObject(mgr);
@@ -86,7 +86,7 @@ namespace Volumebox.Host.Console
             Marshal.ReleaseComObject(deviceEnumerator);
         }
 
-        private ISimpleAudioVolume GetVolumeObject(string name)
+        private ISimpleAudioVolume GetVolumeObject(uint pid)
         {
             // get the speakers (1st render + multimedia) device
             IMMDeviceEnumerator deviceEnumerator = (IMMDeviceEnumerator)(new MMDeviceEnumerator());
@@ -110,11 +110,11 @@ namespace Volumebox.Host.Console
             ISimpleAudioVolume volumeControl = null;
             for (int i = 0; i < count; i++)
             {
-                IAudioSessionControl ctl;
+                IAudioSessionControl2 ctl;
                 sessionEnumerator.GetSession(i, out ctl);
-                string dn;
-                ctl.GetDisplayName(out dn);
-                if (string.Compare(name, dn, StringComparison.OrdinalIgnoreCase) == 0)
+                uint dn;
+                ctl.GetProcessId(out dn);
+                if (dn == pid)
                 {
                     volumeControl = ctl as ISimpleAudioVolume;
                     break;
@@ -191,7 +191,7 @@ namespace Volumebox.Host.Console
         int GetCount(out int SessionCount);
 
         [PreserveSig]
-        int GetSession(int SessionCount, out IAudioSessionControl Session);
+        int GetSession(int SessionCount, out IAudioSessionControl2 Session);
     }
 
     [Guid("F4B1A599-7266-4319-A8CA-E70ACB11E8CD"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -203,6 +203,40 @@ namespace Volumebox.Host.Console
         int GetDisplayName([MarshalAs(UnmanagedType.LPWStr)] out string pRetVal);
 
         // the rest is not implemented
+    }
+
+    [Guid("bfb7ff88-7239-4fc9-8fa2-07c950be9c6d"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IAudioSessionControl2
+    {
+        [PreserveSig]
+        int GetState(out object state);
+        [PreserveSig]
+        int GetDisplayName(out IntPtr name);
+        [PreserveSig]
+        int SetDisplayName(string value, Guid EventContext);
+        [PreserveSig]
+        int GetIconPath(out IntPtr Path);
+        [PreserveSig]
+        int SetIconPath(string Value, Guid EventContext);
+        [PreserveSig]
+        int GetGroupingParam(out Guid GroupingParam);
+        [PreserveSig]
+        int SetGroupingParam(Guid Override, Guid Eventcontext);
+        [PreserveSig]
+        int RegisterAudioSessionNotification(object NewNotifications);
+        [PreserveSig]
+        int UnregisterAudioSessionNotification(object NewNotifications);
+
+        [PreserveSig]
+        int GetSessionIdentifier(out IntPtr retVal);
+        [PreserveSig]
+        int GetSessionInstanceIdentifier(out IntPtr retVal);
+        [PreserveSig]
+        int GetProcessId(out UInt32 retvVal);
+        [PreserveSig]
+        int IsSystemSoundsSession();
+        [PreserveSig]
+        int SetDuckingPreference(bool optOut);
     }
 
     [Guid("87CE5498-68D6-44E5-9215-6DA47EF883D8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
